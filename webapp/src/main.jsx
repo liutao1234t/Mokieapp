@@ -120,6 +120,7 @@ function App() {
   const [user, setUser] = useState(() => loadLS('realUser', null));
   const [tab, setTab] = useState('home');
   const [route, setRoute] = useState([]);
+  const [routeLeaving, setRouteLeaving] = useState(false);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState('');
   const [incoming, setIncoming] = useState(null);
@@ -340,11 +341,17 @@ function App() {
   }
 
   function pushRoute(page) {
+    setRouteLeaving(false);
     setRoute(r => [...r, page]);
   }
 
   function popRoute() {
-    setRoute(r => r.slice(0, -1));
+    if (routeLeaving) return;
+    setRouteLeaving(true);
+    setTimeout(() => {
+      setRoute(r => r.slice(0, -1));
+      setRouteLeaving(false);
+    }, 260);
   }
 
   if (!booted) return <Splash />;
@@ -367,8 +374,8 @@ function App() {
         </>
       )}
 
-      {current?.type === 'chat' && <ChatPage host={current.host} user={user} sendMsgToHost={sendMsgToHost} openDetail={h => setModal({ type: 'detail', host: h })} openGift={h => setModal({ type: 'gift', host: h })} call={h => pushRoute({ type: 'call', host: h })} back={popRoute} showVip={() => setModal({ type: 'vip', index: 1 })} reduceCoins={reduceCoins} addBill={addBill} insertFakeCall={insertFakeCall} setModal={setModal} />}
-      {current?.type === 'call' && <CallPage host={current.host} user={user} callIn={current.callIn} back={popRoute} openGift={h => setModal({ type: 'gift', host: h })} openCharge={openCharge} reduceCoins={reduceCoins} addBill={addBill} blockHost={blockHost} showToast={showToast} setModal={setModal} />}
+      {current?.type === 'chat' && <ChatPage leaving={routeLeaving} host={current.host} user={user} sendMsgToHost={sendMsgToHost} openDetail={h => setModal({ type: 'detail', host: h })} openGift={h => setModal({ type: 'gift', host: h })} call={h => pushRoute({ type: 'call', host: h })} back={popRoute} showVip={() => setModal({ type: 'vip', index: 1 })} reduceCoins={reduceCoins} addBill={addBill} insertFakeCall={insertFakeCall} setModal={setModal} />}
+      {current?.type === 'call' && <CallPage leaving={routeLeaving} host={current.host} user={user} callIn={current.callIn} back={popRoute} openGift={h => setModal({ type: 'gift', host: h })} openCharge={openCharge} reduceCoins={reduceCoins} addBill={addBill} blockHost={blockHost} showToast={showToast} setModal={setModal} />}
       {modal && <ModalHub modal={modal} setModal={setModal} user={user} hosts={hosts} allHosts={allKnownHosts} purchaseLocal={purchaseLocal} openCharge={openCharge} addCoins={addCoins} reduceCoins={reduceCoins} addBill={addBill} follow={follow} blockHost={blockHost} sendMsgToHost={sendMsgToHost} pushRoute={pushRoute} mutateUser={mutateUser} showToast={showToast} />}
       {incoming && <IncomingToast item={incoming} open={() => { setIncoming(null); pushRoute({ type: 'chat', host: incoming.host }); }} />}
       {toast && <div className="toast">{toast}</div>}
@@ -542,7 +549,7 @@ function MessagesPage({ user, allHosts, openChat }) {
   );
 }
 
-function ChatPage({ host, user, sendMsgToHost, openDetail, openGift, call, back, showVip, reduceCoins, addBill, insertFakeCall, setModal }) {
+function ChatPage({ leaving, host, user, sendMsgToHost, openDetail, openGift, call, back, showVip, reduceCoins, addBill, insertFakeCall, setModal }) {
   const talks = user.talkings || [];
   const thread = talks.find(t => t.herid === host.userid);
   const chats = thread?.chats || [];
@@ -572,7 +579,7 @@ function ChatPage({ host, user, sendMsgToHost, openDetail, openGift, call, back,
     insertFakeCall(50);
   }
   return (
-    <div className="subscreen push-screen">
+    <div className={`subscreen push-screen ${leaving ? 'pop-screen' : ''}`}>
       <Nav title={host.nickname} back={back} right={<button onClick={() => setModal({ type: 'report', host })}><MoreHorizontal /></button>} />
       <div className="chat-list">
         {chats.map((c, i) => <div className={`bubble-row ${c.from === 2 ? 'me' : ''}`} key={i}><img src={c.from === 2 ? (user.avatarData || asset('icon_myself_avatar_default')) : c.headImage} onClick={() => openDetail(host)} /><div className="bubble">{c.content}</div></div>)}
@@ -587,7 +594,7 @@ function ChatPage({ host, user, sendMsgToHost, openDetail, openGift, call, back,
   );
 }
 
-function CallPage({ host, user, callIn, back, openGift, openCharge, reduceCoins, addBill, blockHost, showToast, setModal }) {
+function CallPage({ leaving, host, user, callIn, back, openGift, openCharge, reduceCoins, addBill, blockHost, showToast, setModal }) {
   const [phase, setPhase] = useState(callIn ? 'incoming' : 'connecting');
   const [seconds, setSeconds] = useState(0);
   const [words, setWords] = useState([]);
@@ -676,8 +683,8 @@ function CallPage({ host, user, callIn, back, openGift, openCharge, reduceCoins,
     );
   }
   return (
-    <div className="call-screen push-screen">
-      <video className="remote-video" src={host.video_url || host.shortVideo_url} poster={host.avatar} autoPlay playsInline />
+    <div className={`call-screen push-screen ${leaving ? 'pop-screen' : ''}`}>
+      {host.video_url ? <video className="remote-video" src={host.video_url} poster={host.avatar} autoPlay playsInline /> : <div className="remote-video video-empty"><img src={host.avatar} /><span>Connecting...</span></div>}
       <div className="local-camera"><video ref={localVideo} autoPlay muted playsInline className={!cam ? 'hidden' : ''} />{!cam && <Camera />}</div>
       <button className="coin-pill" onClick={openCharge}><img src={asset('icon_diamond')} />{user.coins}</button>
       <div className="call-chat">
@@ -827,7 +834,31 @@ function VipSheet({ setModal, purchaseLocal, index }) {
   const [mode, setMode] = useState(index);
   const item = iapList.find(x => mode === 0 ? x.isVIP === '1' : x.isSVIP === '1');
   const descs = ['Unlock Short Videos Feature', 'Message Chat For Free', 'View Photos Unlimited', 'Get the Host answer in call video', 'Get Diamonds Right Now', 'Each Video Call Fee cut off 50%', 'Exchange contacts with girls', 'Free to join local WhatsApp group'];
-  return <div className="overlay"><div className={`vip-pop ${mode ? 'svip' : ''}`}><button className="close" onClick={() => setModal(null)}><X /></button><img className="vip-girl" src={asset('icon_vip_girl')} /><div className="seg"><button className={!mode ? 'active' : ''} onClick={() => setMode(0)}>VIP</button><button className={mode ? 'active' : ''} onClick={() => setMode(1)}>SVIP</button></div><Crown size={42} /><h2>{mode ? 'SVIP' : 'VIP'}</h2>{descs.map((d, i) => <p key={d}><Check size={15} />{i + 1}.{d}</p>)}<button className="gold" onClick={() => purchaseLocal(item)}>${item.price}</button></div></div>;
+  return (
+    <div className="overlay vip-overlay">
+      <div className={`vip-pop oc-vip ${mode ? 'svip' : ''}`}>
+        <img className="vip-bg" src={asset('icon_vip_girl')} />
+        <img className="vip-crown" src={asset(mode ? 'icon_svip_huangguan' : 'icon_vip_huangguan')} />
+        <div className="vip-segment">
+          <button className={!mode ? 'active' : ''} onClick={() => setMode(0)}>VIP</button>
+          <button className={mode ? 'active' : ''} onClick={() => setMode(1)}>SVIP</button>
+        </div>
+        <h2>{mode ? 'Become SVIP and enjoy' : 'Become VIP and enjoy'}<br />{mode ? 'All Features' : 'Following Features'}</h2>
+        <div className="vip-feature-list">
+          {descs.map((d, i) => {
+            const enabled = mode || i < 4;
+            return <p key={d}><img src={asset(enabled ? 'icon_vip_haveright' : 'icon_vip_Cancel')} />{i + 1}.{d}</p>;
+          })}
+        </div>
+        <button className="vip-buy" onClick={() => purchaseLocal(item)}>
+          <span className={mode ? 'strike' : ''}>{mode ? '$99.99' : '$19.99'}</span>
+          {mode && <span>$49.99</span>}
+          <b>{mode ? 'GET SVIP' : 'GET VIP'}</b>
+        </button>
+      </div>
+      <button className="vip-close-out" onClick={() => setModal(null)}><img src={asset('icon_vip_Cancel')} /></button>
+    </div>
+  );
 }
 
 function MasterSheet({ setModal, purchaseLocal, force }) {
@@ -858,11 +889,11 @@ function InfoPop({ image, click, close }) {
 
 function TextModal({ title, close }) {
   const text = title.includes('Privacy') ? 'We respect your privacy. This H5 build stores account, chat, block, bill and membership data locally in this browser.' : 'By using this service you agree to follow the community rules, respect other users, and use the app responsibly.';
-  return <div className="submodal push-screen"><Nav title={title} back={close} /><div className="terms"><p>{text}</p><p>APP and its services are provided as a local demo in this H5 conversion. No Firebase or payment backend is connected in this build.</p></div></div>;
+  return <AnimatedSubModal title={title} close={close}><div className="terms"><p>{text}</p><p>APP and its services are provided as a local demo in this H5 conversion. No Firebase or payment backend is connected in this build.</p></div></AnimatedSubModal>;
 }
 
 function Support({ close }) {
-  return <div className="submodal push-screen"><Nav title="Online Support" back={close} /><div className="support"><div className="official"><img src={asset('icon_message_officialavatar')} /><div><b>Official</b><p>We will answer your enquiry in 48 hours on business days.</p></div></div></div></div>;
+  return <AnimatedSubModal title="Online Support" close={close}><div className="support"><div className="official"><img src={asset('icon_message_officialavatar')} /><div><b>Official</b><p>We will answer your enquiry in 48 hours on business days.</p></div></div></div></AnimatedSubModal>;
 }
 
 function Confirm({ title, text, ok, okText = 'Sure', close }) {
@@ -870,11 +901,21 @@ function Confirm({ title, text, ok, okText = 'Sure', close }) {
 }
 
 function ListModal({ title, items, render, close }) {
-  return <div className="submodal push-screen"><Nav title={title} back={close} /><div className="list-modal">{items.length === 0 ? <Empty /> : items.map((item, i) => <div className="list-item" key={item.userid || i}>{render(item)}</div>)}</div></div>;
+  return <AnimatedSubModal title={title} close={close}><div className="list-modal">{items.length === 0 ? <Empty /> : items.map((item, i) => <div className="list-item" key={item.userid || i}>{render(item)}</div>)}</div></AnimatedSubModal>;
 }
 
 function Sheet({ children, close, tall }) {
   return <div className="overlay sheet-overlay" onClick={close}><div className={`sheet ${tall ? 'tall' : ''}`} onClick={e => e.stopPropagation()}>{children}</div></div>;
+}
+
+function AnimatedSubModal({ title, close, children }) {
+  const [leaving, setLeaving] = useState(false);
+  function back() {
+    if (leaving) return;
+    setLeaving(true);
+    setTimeout(close, 260);
+  }
+  return <div className={`submodal push-screen ${leaving ? 'pop-screen' : ''}`}><Nav title={title} back={back} />{children}</div>;
 }
 
 function HeaderTitle({ title }) {
