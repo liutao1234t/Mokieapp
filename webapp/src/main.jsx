@@ -572,7 +572,7 @@ function ChatPage({ host, user, sendMsgToHost, openDetail, openGift, call, back,
     insertFakeCall(50);
   }
   return (
-    <div className="subscreen">
+    <div className="subscreen push-screen">
       <Nav title={host.nickname} back={back} right={<button onClick={() => setModal({ type: 'report', host })}><MoreHorizontal /></button>} />
       <div className="chat-list">
         {chats.map((c, i) => <div className={`bubble-row ${c.from === 2 ? 'me' : ''}`} key={i}><img src={c.from === 2 ? (user.avatarData || asset('icon_myself_avatar_default')) : c.headImage} onClick={() => openDetail(host)} /><div className="bubble">{c.content}</div></div>)}
@@ -676,7 +676,7 @@ function CallPage({ host, user, callIn, back, openGift, openCharge, reduceCoins,
     );
   }
   return (
-    <div className="call-screen">
+    <div className="call-screen push-screen">
       <video className="remote-video" src={host.video_url || host.shortVideo_url} poster={host.avatar} autoPlay playsInline />
       <div className="local-camera"><video ref={localVideo} autoPlay muted playsInline className={!cam ? 'hidden' : ''} />{!cam && <Camera />}</div>
       <button className="coin-pill" onClick={openCharge}><img src={asset('icon_diamond')} />{user.coins}</button>
@@ -802,7 +802,25 @@ function GiftSheet({ host, user, setModal, reduceCoins, addBill, showToast }) {
 }
 
 function ChargeSheet({ user, setModal, purchaseLocal }) {
-  return <Sheet close={() => setModal(null)} tall><h3>Account Balance:</h3><div className="big-balance"><img src={asset('icon_diamond')} />{user.coins}</div>{iapList.filter(x => x.isNew !== '1').map((item, i) => <button className="charge-row" key={i} onClick={() => purchaseLocal(item)}><span><img src={asset('icon_diamond')} /><b>{item.diamond_count}</b>{Number(item.freeCount) > 0 && <em>+{item.freeCount}</em>}{item.freeWord && <small><Zap size={12} />{item.freeWord}</small>}</span><strong>${item.price}</strong></button>)}</Sheet>;
+  return (
+    <Sheet close={() => setModal(null)} tall>
+      <h3 className="charge-title">Account Balance:</h3>
+      <div className="big-balance"><img src={asset('icon_diamond')} />{user.coins}</div>
+      {iapList.filter(x => x.isNew !== '1').map((item, i) => (
+        <button className="charge-row" key={i} onClick={() => purchaseLocal(item)}>
+          <span className="charge-pack">
+            <span className="charge-main">
+              <img src={asset('icon_diamond')} />
+              <b>{item.diamond_count}</b>
+              {Number(item.freeCount) > 0 && <em>+{item.freeCount}</em>}
+            </span>
+            {item.freeWord && <small><Zap size={12} />{item.freeWord}</small>}
+          </span>
+          <strong>${item.price}</strong>
+        </button>
+      ))}
+    </Sheet>
+  );
 }
 
 function VipSheet({ setModal, purchaseLocal, index }) {
@@ -840,11 +858,11 @@ function InfoPop({ image, click, close }) {
 
 function TextModal({ title, close }) {
   const text = title.includes('Privacy') ? 'We respect your privacy. This H5 build stores account, chat, block, bill and membership data locally in this browser.' : 'By using this service you agree to follow the community rules, respect other users, and use the app responsibly.';
-  return <div className="submodal"><Nav title={title} back={close} /><div className="terms"><p>{text}</p><p>APP and its services are provided as a local demo in this H5 conversion. No Firebase or payment backend is connected in this build.</p></div></div>;
+  return <div className="submodal push-screen"><Nav title={title} back={close} /><div className="terms"><p>{text}</p><p>APP and its services are provided as a local demo in this H5 conversion. No Firebase or payment backend is connected in this build.</p></div></div>;
 }
 
 function Support({ close }) {
-  return <div className="submodal"><Nav title="Online Support" back={close} /><div className="support"><div className="official"><img src={asset('icon_message_officialavatar')} /><div><b>Official</b><p>We will answer your enquiry in 48 hours on business days.</p></div></div></div></div>;
+  return <div className="submodal push-screen"><Nav title="Online Support" back={close} /><div className="support"><div className="official"><img src={asset('icon_message_officialavatar')} /><div><b>Official</b><p>We will answer your enquiry in 48 hours on business days.</p></div></div></div></div>;
 }
 
 function Confirm({ title, text, ok, okText = 'Sure', close }) {
@@ -852,7 +870,7 @@ function Confirm({ title, text, ok, okText = 'Sure', close }) {
 }
 
 function ListModal({ title, items, render, close }) {
-  return <div className="submodal"><Nav title={title} back={close} /><div className="list-modal">{items.length === 0 ? <Empty /> : items.map((item, i) => <div className="list-item" key={item.userid || i}>{render(item)}</div>)}</div></div>;
+  return <div className="submodal push-screen"><Nav title={title} back={close} /><div className="list-modal">{items.length === 0 ? <Empty /> : items.map((item, i) => <div className="list-item" key={item.userid || i}>{render(item)}</div>)}</div></div>;
 }
 
 function Sheet({ children, close, tall }) {
