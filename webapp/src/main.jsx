@@ -53,9 +53,11 @@ const iapList = [
 ].map((item, index) => ({
   ...item,
   iapIndex: index,
-  eventName: `mokie_iap_purchase_${index + 1}`,
-  htmlEventId: `mokie-iap-${index + 1}`
+  eventName: `iap_pur_${index + 1}`,
+  htmlEventId: `iap_pur_${index + 1}`
 }));
+
+const RATE_US_EVENT_NAME = 'rateus_inappstore';
 
 const giftList = [
   { name: 'Coffee', price: '30', picPath: 'gift_1_picture' },
@@ -172,8 +174,14 @@ function App() {
     iapList.forEach((item, index) => {
       window.MokieIAP[`purchase${index + 1}`] = () => requestPurchase(item, { forceNative: true });
     });
+    window.MokieRateUs = {
+      eventName: RATE_US_EVENT_NAME,
+      htmlEventId: RATE_US_EVENT_NAME,
+      requestRate: requestRateUs
+    };
     return () => {
       delete window.MokieIAP;
+      delete window.MokieRateUs;
     };
   }, [user]);
 
@@ -426,9 +434,52 @@ function App() {
       }
     } catch {}
 
+    try {
+      const eventHandler = window.webkit?.messageHandlers?.[item.eventName];
+      if (eventHandler?.postMessage) {
+        eventHandler.postMessage(payload);
+        sentToNative = true;
+      }
+    } catch {}
+
     if (!sentToNative && !options.forceNative) {
       applyPurchaseSuccess(item);
     }
+
+    return sentToNative;
+  }
+
+  function requestRateUs() {
+    const payload = {
+      eventName: RATE_US_EVENT_NAME,
+      htmlEventId: RATE_US_EVENT_NAME
+    };
+    let sentToNative = false;
+
+    window.dispatchEvent(new CustomEvent(RATE_US_EVENT_NAME, { detail: payload }));
+
+    try {
+      if (typeof window.MokieRateUs?.onRateRequested === 'function') {
+        window.MokieRateUs.onRateRequested(payload);
+        sentToNative = true;
+      }
+    } catch {}
+
+    try {
+      const handler = window.webkit?.messageHandlers?.rateus_inappstore;
+      if (handler?.postMessage) {
+        handler.postMessage(payload);
+        sentToNative = true;
+      }
+    } catch {}
+
+    try {
+      const handler = window.webkit?.messageHandlers?.mokieRateUs;
+      if (handler?.postMessage) {
+        handler.postMessage(payload);
+        sentToNative = true;
+      }
+    } catch {}
 
     return sentToNative;
   }
@@ -486,15 +537,15 @@ function App() {
 
       {current?.type === 'chat' && <ChatPage leaving={routeLeaving} host={current.host} user={user} sendMsgToHost={sendMsgToHost} openDetail={h => setModal({ type: 'detail', host: h })} openGift={h => setModal({ type: 'gift', host: h })} call={h => pushRoute({ type: 'call', host: h })} back={popRoute} showVip={() => setModal({ type: 'vip', index: 1 })} reduceCoins={reduceCoins} addBill={addBill} insertFakeCall={insertFakeCall} setModal={setModal} />}
       {current?.type === 'call' && <CallPage leaving={routeLeaving} host={current.host} user={user} callIn={current.callIn} back={popRoute} openGift={h => setModal({ type: 'gift', host: h })} openCharge={openCharge} reduceCoins={reduceCoins} addBill={addBill} blockHost={blockHost} showToast={showToast} setModal={setModal} />}
-      {modal && <ModalHub modal={modal} setModal={setModal} user={user} hosts={hosts} allHosts={allKnownHosts} purchaseLocal={purchaseLocal} openCharge={openCharge} addCoins={addCoins} reduceCoins={reduceCoins} addBill={addBill} follow={follow} blockHost={blockHost} sendMsgToHost={sendMsgToHost} pushRoute={pushRoute} mutateUser={mutateUser} showToast={showToast} />}
-      <NativeIAPEvents purchaseLocal={purchaseLocal} />
+      {modal && <ModalHub modal={modal} setModal={setModal} user={user} hosts={hosts} allHosts={allKnownHosts} purchaseLocal={purchaseLocal} requestRateUs={requestRateUs} openCharge={openCharge} addCoins={addCoins} reduceCoins={reduceCoins} addBill={addBill} follow={follow} blockHost={blockHost} sendMsgToHost={sendMsgToHost} pushRoute={pushRoute} mutateUser={mutateUser} showToast={showToast} />}
+      <NativeIAPEvents purchaseLocal={purchaseLocal} requestRateUs={requestRateUs} />
       {incoming && <IncomingToast item={incoming} open={() => { setIncoming(null); pushRoute({ type: 'chat', host: incoming.host }); }} />}
       {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
 
-function NativeIAPEvents({ purchaseLocal }) {
+function NativeIAPEvents({ purchaseLocal, requestRateUs }) {
   return (
     <div id="mokie-native-iap-events" hidden aria-hidden="true">
       {iapList.map(item => (
@@ -509,6 +560,11 @@ function NativeIAPEvents({ purchaseLocal }) {
           onClick={() => purchaseLocal(item)}
         />
       ))}
+      <button
+        id={RATE_US_EVENT_NAME}
+        data-rate-event={RATE_US_EVENT_NAME}
+        onClick={requestRateUs}
+      />
     </div>
   );
 }
@@ -996,8 +1052,9 @@ function MasterSheet({ setModal, purchaseLocal, force }) {
   return <div className="overlay"><div className="master-pop">{!force && <button className="close" onClick={() => setModal(null)}><X /></button>}<img src={asset('icon_master_purchase')} /><button className="gold" onClick={() => purchaseLocal(item)}>${item.price}</button></div></div>;
 }
 
-function RateApp({ setModal, mutateUser, addCoins }) {
+function RateApp({ setModal, mutateUser, addCoins, requestRateUs }) {
   function done() {
+    requestRateUs();
     mutateUser(u => { u.isRateUs = true; });
     addCoins(100);
     setModal(null);
