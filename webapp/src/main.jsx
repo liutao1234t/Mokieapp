@@ -155,25 +155,21 @@ function App() {
         return requestPurchase(item, { forceNative: true });
       },
       completePurchase: (id, success = true) => {
-        const item = findIAPItem(id);
-        if (!item) return false;
-        if (success) {
-          applyPurchaseSuccess(item);
-        } else {
-          showToast('Cancel');
-        }
-        return true;
+        return success ? completeNativePurchase(id) : failNativePurchase(id);
       },
       failPurchase: id => {
-        const item = findIAPItem(id);
-        if (!item) return false;
-        showToast('Failed');
-        return true;
+        return failNativePurchase(id);
       }
     };
     iapList.forEach((item, index) => {
       window.MokieIAP[`purchase${index + 1}`] = () => requestPurchase(item, { forceNative: true });
+      window.MokieIAP[`complete${index + 1}`] = () => completeNativePurchase(item);
+      window.MokieIAP[`fail${index + 1}`] = () => failNativePurchase(item);
+      window[`${item.eventName}_success`] = () => completeNativePurchase(item);
+      window[`${item.eventName}_fail`] = () => failNativePurchase(item);
     });
+    window.iap_pur_success = completeNativePurchase;
+    window.iap_pur_fail = failNativePurchase;
     window.MokieRateUs = {
       eventName: RATE_US_EVENT_NAME,
       htmlEventId: RATE_US_EVENT_NAME,
@@ -181,6 +177,12 @@ function App() {
     };
     return () => {
       delete window.MokieIAP;
+      iapList.forEach(item => {
+        delete window[`${item.eventName}_success`];
+        delete window[`${item.eventName}_fail`];
+      });
+      delete window.iap_pur_success;
+      delete window.iap_pur_fail;
       delete window.MokieRateUs;
     };
   }, [user]);
@@ -447,6 +449,24 @@ function App() {
     }
 
     return sentToNative;
+  }
+
+  function completeNativePurchase(id) {
+    const item = findIAPItem(id);
+    if (!item) return false;
+    applyPurchaseSuccess(item);
+    window.dispatchEvent(new CustomEvent(`${item.eventName}_success`, { detail: toIAPPayload(item) }));
+    window.dispatchEvent(new CustomEvent('mokie_iap_purchase_success', { detail: toIAPPayload(item) }));
+    return true;
+  }
+
+  function failNativePurchase(id) {
+    const item = findIAPItem(id);
+    if (!item) return false;
+    showToast('Failed');
+    window.dispatchEvent(new CustomEvent(`${item.eventName}_fail`, { detail: toIAPPayload(item) }));
+    window.dispatchEvent(new CustomEvent('mokie_iap_purchase_fail', { detail: toIAPPayload(item) }));
+    return true;
   }
 
   function requestRateUs() {
