@@ -549,7 +549,7 @@ function App() {
             {tab === 'video' && <VideoFeed hosts={data.videoHosts} user={user} like={like} openDetail={h => setModal({ type: 'detail', host: h })} call={h => pushRoute({ type: 'call', host: h })} chat={h => pushRoute({ type: 'chat', host: h })} showVip={i => setModal({ type: 'vip', index: i })} />}
             {tab === 'rank' && <RankPage hosts={hosts} user={user} follow={follow} openDetail={h => setModal({ type: 'detail', host: h })} />}
             {tab === 'msg' && <MessagesPage user={user} allHosts={allKnownHosts} openChat={h => { setMsgDot(false); pushRoute({ type: 'chat', host: h }); }} />}
-            {tab === 'me' && <MePage user={user} allHosts={allKnownHosts} openCharge={openCharge} setModal={setModal} signOut={signOut} unblockHost={unblockHost} setAvatar={avatarData => mutateUser(u => { u.avatarData = avatarData; })} />}
+            {tab === 'me' && <MePage user={user} allHosts={allKnownHosts} openCharge={openCharge} requestRateUs={requestRateUs} setModal={setModal} signOut={signOut} unblockHost={unblockHost} setAvatar={avatarData => mutateUser(u => { u.avatarData = avatarData; })} />}
           </main>
           <Tabbar tab={tab} setTab={setTab} msgDot={msgDot || (user.talkings || []).some(t => t.unreadCount)} />
         </>
@@ -912,7 +912,7 @@ function CallPage({ leaving, host, user, callIn, back, openGift, openCharge, red
   );
 }
 
-function MePage({ user, allHosts, openCharge, setModal, signOut, unblockHost, setAvatar }) {
+function MePage({ user, allHosts, openCharge, requestRateUs, setModal, signOut, unblockHost, setAvatar }) {
   const fileRef = useRef(null);
   const following = (user.myFollowings || []).map(id => allHosts.find(h => h.userid === id)).filter(Boolean);
   const blocks = (user.blockUsers || []).map(id => allHosts.find(h => h.userid === id) || { userid: id, nickname: id, avatar: asset('icon_myself_avatar_default') });
@@ -942,7 +942,7 @@ function MePage({ user, allHosts, openCharge, setModal, signOut, unblockHost, se
         <Setting icon="icon_me_blockList" title="BlockList" onClick={() => setModal({ type: 'blocks', items: blocks, unblockHost })} />
         <Setting icon="icon_me_terms" title="Terms of user" onClick={() => setModal({ type: 'terms', title: 'Terms of use' })} />
         <Setting icon="icon_me_privacy" title="Privacy Policy" onClick={() => setModal({ type: 'terms', title: 'Privacy Policy' })} />
-        <Setting icon="icon_me_clearcashe" title="Clear Cashe" onClick={() => setModal({ type: 'confirm', title: 'Clear Cashe', text: 'Do you want to clear cashe?', ok: () => {} })} />
+        <Setting icon="icon_me_clearcashe" title="Clear Cashe" onClick={() => requestRateUs()} />
         <Setting icon="icon_me_deleteaccount" title="Delete Account" onClick={() => setModal({ type: 'confirm', title: 'Delete Account', text: 'Delete account will delete all your data in app,are you sure to do this?', ok: () => signOut(true), okText: 'Delete' })} />
       </div>
       <button className="signout" onClick={() => setModal({ type: 'confirm', title: 'Sign out', text: 'Sign out will not receive her message,do you really want to?', ok: () => signOut(false) })}>Sign out</button>
@@ -1019,7 +1019,7 @@ function ChargeSheet({ user, setModal, purchaseLocal }) {
     <Sheet close={() => setModal(null)} tall>
       <h3 className="charge-title">Account Balance:</h3>
       <div className="big-balance"><img src={asset('icon_diamond')} />{user.coins}</div>
-      {iapList.filter(x => x.isNew !== '1').map((item, i) => (
+      {iapList.map((item, i) => (
         <button className="charge-row" key={i} onClick={() => purchaseLocal(item)}>
           <span className="charge-pack">
             <span className="charge-main">
