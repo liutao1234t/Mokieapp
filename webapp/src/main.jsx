@@ -50,7 +50,12 @@ const iapList = [
   { product_id: 'com.testiap.purchase', price: '49.99', diamond_count: '3050', isSVIP: '1', freeCount: '300', freeWord: '22%User Take' },
   { product_id: 'com.testiap.purchase', price: '79.99', diamond_count: '4950', freeCount: '500' },
   { product_id: 'com.testiap.purchase', price: '99.99', diamond_count: '6200', freeCount: '900', freeWord: 'Save Best' }
-];
+].map((item, index) => ({
+  ...item,
+  iapIndex: index,
+  eventName: `mokie_iap_purchase_${index + 1}`,
+  htmlEventId: `mokie-iap-${index + 1}`
+}));
 
 const giftList = [
   { name: 'Coffee', price: '30', picPath: 'gift_1_picture' },
@@ -136,6 +141,40 @@ function App() {
 
   useEffect(() => {
     if (user) saveLS('realUser', user);
+  }, [user]);
+
+  useEffect(() => {
+    window.MokieIAP = {
+      items: iapList.map(toIAPPayload),
+      getItems: () => iapList.map(toIAPPayload),
+      requestPurchase: id => {
+        const item = findIAPItem(id);
+        if (!item) return false;
+        return requestPurchase(item, { forceNative: true });
+      },
+      completePurchase: (id, success = true) => {
+        const item = findIAPItem(id);
+        if (!item) return false;
+        if (success) {
+          applyPurchaseSuccess(item);
+        } else {
+          showToast('Cancel');
+        }
+        return true;
+      },
+      failPurchase: id => {
+        const item = findIAPItem(id);
+        if (!item) return false;
+        showToast('Failed');
+        return true;
+      }
+    };
+    iapList.forEach((item, index) => {
+      window.MokieIAP[`purchase${index + 1}`] = () => requestPurchase(item, { forceNative: true });
+    });
+    return () => {
+      delete window.MokieIAP;
+    };
   }, [user]);
 
   useEffect(() => {
@@ -324,6 +363,77 @@ function App() {
   }
 
   function purchaseLocal(item) {
+    requestPurchase(item);
+  }
+
+  function findIAPItem(id) {
+    if (typeof id === 'object' && id !== null) {
+      return iapList.find(item => item.iapIndex === Number(id.iapIndex)) ||
+        iapList.find(item => item.eventName === id.eventName) ||
+        iapList.find(item => item.price === String(id.price));
+    }
+    if (typeof id === 'number') return iapList.find(item => item.iapIndex === id);
+    const value = String(id);
+    return iapList.find(item => String(item.iapIndex) === value) ||
+      iapList.find(item => String(item.iapIndex + 1) === value) ||
+      iapList.find(item => item.eventName === value) ||
+      iapList.find(item => item.htmlEventId === value) ||
+      iapList.find(item => item.price === value) ||
+      iapList.find(item => item.product_id === value);
+  }
+
+  function toIAPPayload(item) {
+    return {
+      iapIndex: item.iapIndex,
+      eventName: item.eventName,
+      htmlEventId: item.htmlEventId,
+      productId: item.product_id,
+      price: item.price,
+      diamondCount: item.diamond_count,
+      freeCount: item.freeCount || '0',
+      freeWord: item.freeWord || '',
+      type: item.isNew === '1' ? 'new' : item.isVIP === '1' ? 'vip' : item.isSVIP === '1' ? 'svip' : item.isMaster === '1' ? 'master' : 'normal'
+    };
+  }
+
+  function requestPurchase(item, options = {}) {
+    const payload = toIAPPayload(item);
+    let sentToNative = false;
+
+    window.dispatchEvent(new CustomEvent(item.eventName, { detail: payload }));
+    window.dispatchEvent(new CustomEvent('mokie_iap_purchase', { detail: payload }));
+
+    try {
+      if (typeof window.MokieIAP?.onPurchaseRequested === 'function') {
+        window.MokieIAP.onPurchaseRequested(payload);
+        sentToNative = true;
+      }
+    } catch {}
+
+    try {
+      const handler = window.webkit?.messageHandlers?.mokieIAP;
+      if (handler?.postMessage) {
+        handler.postMessage(payload);
+        sentToNative = true;
+      }
+    } catch {}
+
+    try {
+      const indexedHandler = window.webkit?.messageHandlers?.[`mokieIAP${item.iapIndex + 1}`];
+      if (indexedHandler?.postMessage) {
+        indexedHandler.postMessage(payload);
+        sentToNative = true;
+      }
+    } catch {}
+
+    if (!sentToNative && !options.forceNative) {
+      applyPurchaseSuccess(item);
+    }
+
+    return sentToNative;
+  }
+
+  function applyPurchaseSuccess(item) {
     const amount = Number(item.diamond_count || 0) + Number(item.freeCount || 0);
     mutateUser(u => {
       u.coins = String(Number(u.coins || 0) + amount);
@@ -377,8 +487,28 @@ function App() {
       {current?.type === 'chat' && <ChatPage leaving={routeLeaving} host={current.host} user={user} sendMsgToHost={sendMsgToHost} openDetail={h => setModal({ type: 'detail', host: h })} openGift={h => setModal({ type: 'gift', host: h })} call={h => pushRoute({ type: 'call', host: h })} back={popRoute} showVip={() => setModal({ type: 'vip', index: 1 })} reduceCoins={reduceCoins} addBill={addBill} insertFakeCall={insertFakeCall} setModal={setModal} />}
       {current?.type === 'call' && <CallPage leaving={routeLeaving} host={current.host} user={user} callIn={current.callIn} back={popRoute} openGift={h => setModal({ type: 'gift', host: h })} openCharge={openCharge} reduceCoins={reduceCoins} addBill={addBill} blockHost={blockHost} showToast={showToast} setModal={setModal} />}
       {modal && <ModalHub modal={modal} setModal={setModal} user={user} hosts={hosts} allHosts={allKnownHosts} purchaseLocal={purchaseLocal} openCharge={openCharge} addCoins={addCoins} reduceCoins={reduceCoins} addBill={addBill} follow={follow} blockHost={blockHost} sendMsgToHost={sendMsgToHost} pushRoute={pushRoute} mutateUser={mutateUser} showToast={showToast} />}
+      <NativeIAPEvents purchaseLocal={purchaseLocal} />
       {incoming && <IncomingToast item={incoming} open={() => { setIncoming(null); pushRoute({ type: 'chat', host: incoming.host }); }} />}
       {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+function NativeIAPEvents({ purchaseLocal }) {
+  return (
+    <div id="mokie-native-iap-events" hidden aria-hidden="true">
+      {iapList.map(item => (
+        <button
+          key={item.htmlEventId}
+          id={item.htmlEventId}
+          data-iap-index={item.iapIndex}
+          data-iap-event={item.eventName}
+          data-product-id={item.product_id}
+          data-price={item.price}
+          data-diamond-count={item.diamond_count}
+          onClick={() => purchaseLocal(item)}
+        />
+      ))}
     </div>
   );
 }
