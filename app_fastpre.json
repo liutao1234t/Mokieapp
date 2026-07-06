@@ -1,0 +1,188 @@
+{
+  "appProfile": {
+    "appName": "Mokie",
+    "category": "AI beauty and fashion styling",
+    "locale": "en-US"
+  },
+  "visualTheme": {
+    "primaryColor": "#EC0A7A",
+    "accentColor": "#FFD21A",
+    "deepColor": "#10008A"
+  },
+  "homePanel": {
+    "headline": "findTheTings",
+    "subline": "AI ideas for outfits, makeup, colors, and occasions",
+    "ctaLabel": "Start Styling"
+  },
+  "styleAssistant": {
+    "title": "Your AI Style Assistant",
+    "intro": "Ask about outfits, colors, makeup, or occasions",
+    "inputHint": "Ask your style question..."
+  },
+  "outfitGenerator": {
+    "title": "AI Outfit Generator",
+    "dailyTheme": "Daily Look",
+    "actionLabel": "Surprise Me"
+  },
+  "beautyPrompt": {
+    "occasion": "first date",
+    "mood": "cute but confident",
+    "colorFocus": "soft red"
+  },
+  "colorChallenge": {
+    "title": "Master the Color Red",
+    "tag": "Trending Now",
+    "requirement": "Include one visible red item"
+  },
+  "challengeTimer": {
+    "days": 2,
+    "hours": 14,
+    "minutes": 30
+  },
+  "communityFeed": {
+    "title": "Community",
+    "submissionCount": 1204,
+    "entryMode": "style gallery"
+  },
+  "sampleCreator": {
+    "displayName": "Jenny",
+    "styleLabel": "beach glam",
+    "likes": 1500
+  },
+  "sampleLook": {
+    "outfit": {
+      "dress": "pale blue wrap dress",
+      "shoe": "silver heel",
+      "accessory": "soft pearl clip"
+    },
+    "makeup": {
+      "lip": "rose gloss",
+      "eye": "champagne shimmer",
+      "cheek": "warm peach"
+    }
+  },
+  "chatScene": {
+    "contactName": "Jenny",
+    "lastMessage": "Thanks! It's from the new drop.",
+    "mediaMode": "photo friendly"
+  },
+  "messageComposer": {
+    "placeholder": "Send a style note",
+    "cameraLabel": "Add photo",
+    "sendLabel": "Send"
+  },
+  "profileCard": {
+    "displayName": "Maya",
+    "styleBio": "Loves bold color and soft glam",
+    "favoriteMood": "playful"
+  },
+  "notificationCenter": {
+    "badgeCount": 1,
+    "latestTitle": "New color challenge",
+    "latestTone": "friendly"
+  },
+  "navigationTabs": {
+    "home": "Home",
+    "challenge": "Challenge",
+    "feed": "Feed",
+    "ai": "AI"
+  },
+  "generationRequest": {
+    "input": {
+      "bodyFrame": "full body",
+      "setting": "city afternoon",
+      "weather": "warm"
+    },
+    "output": {
+      "lookName": "Crimson City Glow",
+      "confidenceScore": 92,
+      "renderTone": "polished"
+    }
+  },
+  "styleRules": {
+    "photoGuidance": {
+      "pose": "full body or three quarter",
+      "lighting": "clear natural light",
+      "background": "uncluttered"
+    },
+    "contentLimits": {
+      "respectPeople": true,
+      "avoidPrivateDetails": true,
+      "permissionNeeded": true
+    }
+  },
+  "aiModelInfo": {
+    "ownership": "proprietary",
+    "providerType": "in-house",
+    "privacyMode": "minimal processing"
+  },
+  "privacySettings": {
+    "saleOfData": false,
+    "adProfiling": false,
+    "thirdPartyAiModel": false
+  },
+  "styleInspiration": {
+    "cardOne": {
+      "icon": "hanger",
+      "question": "What should I wear today?"
+    },
+    "cardTwo": {
+      "icon": "heart",
+      "question": "How can I style red softly?"
+    },
+    "cardThree": {
+      "icon": "music",
+      "question": "What outfit fits a first date?"
+    }
+  },
+  "makeupPalette": {
+    "base": "natural satin",
+    "lipColor": "berry rose",
+    "eyeColor": "gold shimmer"
+  },
+  "outfitAdjustment": {
+    "fit": "relaxed",
+    "colorDepth": "vivid",
+    "accessoryLevel": "medium"
+  },
+  "savedLook": {
+    "name": "Weekend Pink Pop",
+    "folder": "date night",
+    "createdAt": "2026-07-06T10:23:00Z"
+  },
+  "dailyTip": {
+    "title": "Balance one bold piece",
+    "body": "Pair a bright item with calm textures and clean makeup."
+  },
+  "userJourney": {
+    "start": "open AI tab",
+    "middle": "enter occasion and color",
+    "finish": "save generated look"
+  },
+  "contentSafety": {
+    "tone": "respectful",
+    "imagePermission": "required",
+    "publicPosting": "user chosen"
+  },
+  "supportInfo": {
+    "email": "support@mokie.fun",
+    "responseTopic": "app help and privacy requests",
+    "language": "English"
+  },
+  "storeMetadataDraft": {
+    "title": "Mokie: AI Beauty Stylist",
+    "subtitle": "Outfit Looks & Makeup AI",
+    "keywordTheme": "beauty fashion styling"
+  },
+  "launchScreen": {
+    "canvas": {
+      "width": 780,
+      "height": 1768,
+      "format": "png"
+    },
+    "copy": {
+      "lineOne": "AI beauty, outfit magic",
+      "lineTwo": "Create your look in seconds"
+    }
+  }
+}
